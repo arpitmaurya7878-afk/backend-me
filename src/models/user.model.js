@@ -19,7 +19,7 @@ const userSchema = new Schema(  {
             lowercase: true,
             trim: true,
         },
-        fullname:{
+        fullName:{
             type: String,
             required: true,
             trim: true,
@@ -44,18 +44,26 @@ const userSchema = new Schema(  {
         },
         refreshToken:{
             type: String
-        },
-        {
+        }
+       
+    }, {
             timestamps:true
         }
-    })
+)
 
+//gpt 
+userSchema.pre("save", async function () {
+    if (!this.isModified("password")) return;
 
-     userSchema.pre("save", async function(next){
-        if(!this.isModified("password")) return next();
-        this.password = await bcrypt.hash(this.password,10)
-        next()
-     })
+    this.password = await bcrypt.hash(this.password, 10);
+});
+
+    
+    //  userSchema.pre("save", async function(next){
+    //     if(!this.isModified("password")) return next();
+    //     this.password = await bcrypt.hash(this.password,10)
+    //     next()
+    //  })
 
      userSchema.methods.isPasswordCorrect = async function (password) {
         return await bcrypt.compare(password,this.password)
@@ -67,7 +75,7 @@ const userSchema = new Schema(  {
                 _id: this._id,
                 email: this.email,
                 username: this.username,
-                fullname: this.fullname
+                fullName: this.fullName
             },
             process.env.ACCESS_TOKEN_SECRET,{
                 expiresIn: process.env.ACCESS_TOKEN_EXPIRY

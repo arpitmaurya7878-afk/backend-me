@@ -4,11 +4,11 @@ import {User} from "../models/user.model.js"
 import {uploadOnCloudinary} from "../utils/cloudiary.js"
 import { ApiResponse } from "../utils/Apiresponse.js";
 
-const registerUser = asyncHandler(asyncHandler(async(req,res) =>{
+const registerUser = asyncHandler(async(req,res) =>{
    
     //get user details from frontend
 
-  const {fullName ,email}  = req.body
+  const {fullName ,email,username,password}  = req.body
   console.log("email:",email);
  
     // validation - not empty
@@ -20,7 +20,7 @@ const registerUser = asyncHandler(asyncHandler(async(req,res) =>{
         throw new ApiError(400,"All fields are required")
       }
     // chek if user already exists: username,email
-    const existedUser = User.findOne({
+    const existedUser =  await User.findOne({
       $or: [{email},{username}]
      })
 
@@ -28,13 +28,21 @@ const registerUser = asyncHandler(asyncHandler(async(req,res) =>{
       throw new ApiError (409,"user with email or username already existed")
      }
     //check for image,check for avatar
+    
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath  = req.files?.avatar[0]?.path;
+    const coverImageLocalPath  = req.files?.coverImage[0]?.path;
+   
  // upload them to cloudinary,avatar
-    if(!avatarLocalpath){
+    if(!avatarLocalPath){
       throw new ApiError(400,"Avatar file is required")
     }
+
+console.log("Avatar Path:", avatarLocalPath);
+
+
+
    const avatar = await uploadOnCloudinary(avatarLocalPath)
+   console.log("Avatar Upload Response:", avatar);
    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
    if(!avatar){
      throw new ApiError(400,"Avatar file is required")
@@ -42,7 +50,7 @@ const registerUser = asyncHandler(asyncHandler(async(req,res) =>{
 
    
     // create user object - create entry in db 
-   const  user =   User.create({
+   const  user =  await User.create({
   fullName,
   avatar: avatar.url,
   coverImage: coverImage?.url || "",
@@ -51,9 +59,7 @@ const registerUser = asyncHandler(asyncHandler(async(req,res) =>{
   username: username.toLowerCase()
 })
  // to check data insert hua hai ya nhi 
- const createdUser = await User.findById(user._id).select(
-  "-password - refreshToken"
- )
+ const createdUser = await User.findById(user._id).select("-password -refreshToken")
  if(!createdUser){
   throw new ApiError(500,"Something went wrong while registering a user"
   )
@@ -68,7 +74,8 @@ const registerUser = asyncHandler(asyncHandler(async(req,res) =>{
     // retun response
 
 
-}))
+})
+
 
 //http://localhost:8000/api/v1/users/register
 export {registerUser}
